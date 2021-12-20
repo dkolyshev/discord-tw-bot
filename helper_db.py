@@ -69,7 +69,7 @@ def check_acc_follows_count(conn, account_name):
         return numberOfRows
 
 def db_init():
-    conn = sqlite3.connect('tw.db')
+    conn = sqlite3.connect('./tw.db')
     if db_table_exists(conn, 'tw_accs_data') == False:
         query = '''CREATE TABLE tw_accs_data
                     (id INT PRIMARY KEY    NOT NULL,
