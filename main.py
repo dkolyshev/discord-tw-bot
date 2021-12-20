@@ -35,6 +35,22 @@ async def on_ready():
     channel = bot.get_channel(channel_id)
     print("Bot is ready")
     print("Default channel ID for BG task is " + str(channel))
+  
+# define !dtw_enable_bg_task command
+@bot.command()
+async def dtw_enable_bg_task(ctx, status):
+  global enable_bg_task
+  if status:
+    enable_bg_task = True
+  else:
+    enable_bg_task = False
+
+# define !dtw_bg_task_interval command
+@bot.command()
+async def dtw_bg_task_interval(ctx, interval=5):
+  global bg_task_interval
+  bg_task_interval - interval
+
 
 # define !dtw_help command
 @bot.command()

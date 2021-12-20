@@ -1,5 +1,6 @@
 import twitter_api
 import helper_db
+import requests
 from discord import Embed
 
 async def dtw_check_processing(ctx, accs, send_msg_if_nothing=True):
@@ -28,7 +29,8 @@ async def dtw_check_processing(ctx, accs, send_msg_if_nothing=True):
                 for i in range(total_follows_to_remove):
                     helper_db.conn.execute("DELETE FROM tw_accs_data WHERE friend_id = ?", (follows_to_remove[i],))
                     helper_db.conn.commit()
-                    follow_to_remove_name = await twitter_api.get_user_name(follows_to_remove[i])
+                    # follow_to_remove_name = await twitter_api.get_user_name(follows_to_remove[i])
+                    follow_to_remove_name = await fetch_username('raw', follows_to_remove[i])
                     if follow_to_remove_name:
                         embed_msg_follows_to_remove.add_field(name=follow_to_remove_name, value="https://twitter.com/" + follow_to_remove_name, inline=True)
                     else:
@@ -39,7 +41,11 @@ async def dtw_check_processing(ctx, accs, send_msg_if_nothing=True):
                 embed_msg_new_follows = Embed(title="Updates!", description="The account **" + acc + "** started following: ", color=0x00ff00)
                 total_new_followers = len(new_follow)
                 for i in range(total_new_followers):
-                    new_follow_name = await twitter_api.get_user_name(new_follow[i])
+                    # try to obtain username via 3rd part service
+                    new_follow_name = await fetch_username('tweeterid', follows_to_remove[i])
+                    if not new_follow_name:
+                        # in case 3rd part service is failed - fetch data directly from Twitter API
+                        new_follow_name = await fetch_username('api', follows_to_remove[i])
                     if new_follow_name:
                         embed_msg_new_follows.add_field(name=new_follow_name, value="https://twitter.com/" + new_follow_name, inline=True)
                 embed_msg.append(embed_msg_new_follows)
@@ -81,3 +87,25 @@ async def check_flws_toadd(acc, ids):
         print(new_follow)
     
     return new_follow
+
+async def convert_usedid_username(userid):
+    service_url = 'https://tweeterid.com/ajax.php'
+    files = {
+        'input': (None, userid)
+    }
+    response = requests.post(service_url, files=files)
+    data = response.content.decode("utf-8")
+    if data != 'error':
+        return data
+    else:
+        return False
+
+async def fetch_username(way, userid):
+    if way == 'api':
+        username = await twitter_api.get_user_name(userid)
+    elif way == 'tweeterid':
+        username_tmp = await convert_usedid_username(userid)
+        username = username_tmp.replace('@', '')
+    elif way == 'raw':
+        username = 'i/user/' + str(userid)
+    return username
